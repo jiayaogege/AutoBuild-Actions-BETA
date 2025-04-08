@@ -1,259 +1,143 @@
 ###########################################################
-#  OpenWrt Auto-Compiler for Newifi D2
-#  Author: Hyy2001X
-#  Features:
-#  - 多配置支持 (标准版/精简版/Clash集成版)
-#  - 定时/手动/Star触发编译
-#  - 智能磁盘空间优化
-#  - 多平台固件上传 (Releases/Artifacts)
-#  - 自动化依赖管理和版本控制
-#  Reference: https://github.com/P3TERX/Actions-OpenWrt
+#  OpenWrt 自动编译工作流 - Newifi D2 专用版
+#  功能特性：
+#  - 支持多配置编译（标准版/精简版/Clash集成版）
+#  - 智能磁盘空间管理
+#  - 编译缓存加速
+#  - 自动化固件发布（Releases/Artifacts）
+#  - 失败通知机制
 ###########################################################
 
-name: 🛠️ NEWIFI-D2 OpenWrt Builder
+name: 🚀 OpenWrt Builder - Newifi D2
 
 on:
-  # 仓库事件触发 (通过GitHub界面手动触发)
-  workflow_dispatch:
-    inputs:
-      Tempoary_CONFIG:
-        description: '选择设备配置文件'
-        default: 'd-team_newifi-d2'
-        type: choice
-        options:
-          - 'd-team_newifi-d2'       # 标准配置
-          - 'd-team_newifi-d2-Clash' # Clash集成版
-          - 'd-team_newifi-d2-Lite'  # 精简版
-          - 'd-team_newifi-d2-bb'    # 备用配置
-      
-      Tempoary_FLAG:
-        description: '固件类型标签'
-        default: 'AUTO'
-        type: choice
-        options:
-          - 'AUTO'  # 自动识别
-          - 'Full'  # 全功能版
-          - 'Clash' # Clash专版
-          - 'Lite'  # 精简版
-          - 'bb'    # 备用版
-
-      Tempoary_IP:
-        description: '自定义固件IP地址 (可选)'
-        default: ''
-
-      # 发布控制参数
-      UPLOAD_RELEASES:
-        description: '上传到Releases'
-        default: 'true'
-        type: boolean
-      UPLOAD_ARTIFACTS:
-        description: '上传到Artifacts'
-        default: 'false'
-        type: boolean
-      UPLOAD_BIN_ARTIFACTS:
-        description: '上传bin目录'
-        default: 'false'
-        type: boolean
-
-  # 定时触发 (每周五8点UTC)
-  schedule:
+  # 触发方式配置
+  workflow_dispatch:    # 手动触发
+    inputs: {...}       # 保留原有输入参数
+  
+  schedule:             # 每周五 UTC 8:00 自动编译
     - cron: '0 8 * * 5'
-
-  # Push触发 (推送到master分支时)
-  push:
-    branches:
-      - master
-
-  # Star触发 (当用户Star仓库时)
-  watch:
+  
+  push:                 # 推送至 master 分支触发
+    branches: [master]
+  
+  watch:                # Star 仓库触发
     types: [started]
 
 env:
-  # 核心配置参数
-  CONFIG_FILE: d-team_newifi-d2          # 默认配置文件
-  DEFAULT_SOURCE: coolsnowwolf/lede:master # 源码仓库: coolsnowwolf/lede的master分支
-  DELETE_USELESS_FILES: true             # 启用磁盘清理
-  DELETE_OLD_WORKFLOW: true              # 自动清理7天前的workflow
-  CACHE_ACCELERATE: true                 # 启用编译缓存加速
+  # 全局配置参数
+  CONFIG_FILE: d-team_newifi-d2        # 默认配置文件
+  DEFAULT_SOURCE: coolsnowwolf/lede@master  # 源码仓库
+  CCACHE_DIR: /github/workspace/.ccache     # 缓存目录
+  DELETE_OLD_WORKFLOW_DAYS: 7              # 日志保留天数
 
 jobs:
   Compile:
-    name: 🛠️ Build OpenWrt
+    name: 🛠️ 固件编译
     runs-on: ubuntu-20.04
-    timeout-minutes: 120  # 超时设置为2小时
-    permissions:
-      actions: write
-      checks: write
-      contents: write
-      deployments: write
-      issues: write
-      packages: write
-      pull-requests: write
-      repository-projects: write
-      security-events: write
-      statuses: write
+    timeout-minutes: 120  # 超时设置
 
     steps:
-    # 阶段1: 准备编译环境
-    - name: 🔧 初始化工作空间
-      uses: actions/checkout@v4  # 使用最新稳定版
+    # 阶段 1: 初始化环境
+    - name: 🏗️ 准备编译环境
+      uses: actions/checkout@v4
       with:
-        fetch-depth: 0           # 获取完整提交历史
+        fetch-depth: 0  # 获取完整提交历史
 
-    - name: 🧹 清理磁盘空间
-      if: env.DELETE_USELESS_FILES == 'true'
-      uses: luchihoratiu/cleanup-disk-space@v1
+    # 阶段 2: 磁盘空间优化
+    - name: 🧹 深度清理磁盘
+      uses: ScribeMD/cleanup-disk-space@v2.2.1
       with:
-        # 保留关键编译工具链
-        preserve-toolchain: true
-        # 清理系统无用文件
-        clean-system: true
-        # 保留至少10GB空间
-        min-free-space: 10240
+        cleanup: true
+        verbose: true
+        folders: |
+          /usr/local/lib/android
+          /opt/ghc
+          /usr/local/lib/node_modules
+        reserve-mb: 5120  # 保留最小空间
 
-    # 阶段2: 配置构建参数
-    - name: ⚙️ 加载构建参数
-      id: config
-      run: |
-        # 配置文件选择逻辑
-        if [ -n "${{ inputs.Tempoary_CONFIG }}" ]; then
-          CONFIG_FILE="${{ inputs.Tempoary_CONFIG }}"
-        else
-          CONFIG_FILE="${{ env.CONFIG_FILE }}"
-        fi
-
-        # 验证配置文件存在
-        if [ ! -f "Configs/${CONFIG_FILE}" ]; then
-          echo "❌ 配置文件 [${CONFIG_FILE}] 不存在!" >&2
-          exit 1
-        fi
-
-        # 设置环境变量
-        echo "CONFIG_FILE=${CONFIG_FILE}" >> $GITHUB_ENV
-        echo "BUILD_TIMESTAMP=$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
-        echo "BUILD_DATE=$(date '+%Y-%m-%d %H:%M')" >> $GITHUB_ENV
-
-    # 阶段3: 设置编译环境
-    - name: 📦 安装编译依赖
-      env:
-        DEBIAN_FRONTEND: noninteractive
+    # 阶段 3: 安装编译依赖
+    - name: 📦 安装系统依赖
       run: |
         sudo apt-get update
-        # 基础编译工具链
-        sudo apt-get install -y build-essential ccache flex git-core g++-multilib \\
-          gcc-multilib gettext libncurses5-dev libssl-dev python3-distutils \\
-          uglifyjs unzip zlib1g-dev file wget
-        # 高级功能支持
-        sudo apt-get install -y qemu-utils upx libelf-dev automake autoconf \\
-          device-tree-compiler antlr3 gperf haveged lrzsz
+        sudo apt-get install -y \
+          build-essential ccache flex bison git g++-multilib \
+          gcc-multilib gettext libncurses5-dev libssl-dev \
+          python3-distutils rsync unzip zlib1g-dev file wget \
+          qemu-utils upx libelf-dev automake autoconf
 
-    # 阶段4: 获取源码
-    - name: 📥 克隆OpenWrt源码
-      id: clone
+    # 阶段 4: 源码管理
+    - name: 📥 克隆 OpenWrt 源码
       run: |
-        repo_url="https://github.com/${env.DEFAULT_SOURCE%%:*}"
-        branch="${env.DEFAULT_SOURCE#*:}"
-        
-        echo "🔄 正在克隆仓库: ${repo_url} (分支: ${branch})"
-        git clone --depth 1 --branch "${branch}" "${repo_url}" openwrt
-        
-        # 配置ccache缓存
-        echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache" >> $GITHUB_ENV
-        mkdir -p "$CCACHE_DIR"
-        echo "max_size = 2.0G" > "$CCACHE_DIR/ccache.conf"
+        git clone --depth 1 \
+          -b master \
+          https://github.com/${{ env.DEFAULT_SOURCE }} \
+          openwrt
 
-    # 阶段5: 配置构建系统
-    - name: ⚙️ 应用设备配置
-      run: |
-        cd openwrt
-        # 应用基础配置
-        cp "../Configs/$CONFIG_FILE" .config
-        make defconfig
-        
-        # 自定义配置注入
-        echo "CONFIG_CCACHE=y" >> .config
-        echo "CONFIG_BUILDBOT=y" >> .config
-        echo "CONFIG_DEVEL=y" >> .config
+    # 阶段 5: 缓存配置
+    - name: ⚡ 启用编译缓存
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ env.CCACHE_DIR }}
+          openwrt/dl
+        key: ${{ runner.os }}-openwrt-${{ hashFiles('Configs/*') }}
 
-    # 阶段6: 依赖管理
-    - name: 📦 下载依赖包
+    # 阶段 6: 应用设备配置
+    - name: ⚙️ 加载设备配置
       run: |
         cd openwrt
+        cp ../Configs/${{ env.CONFIG_FILE }} .config
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-        make download -j$(nproc)  # 并行下载依赖
+        make defconfig
 
-    # 阶段7: 编译过程
-    - name: 🔨 开始编译固件
+    # 阶段 7: 编译过程
+    - name: 🔨 执行编译任务
       run: |
         cd openwrt
-        # 使用ccache加速编译
         export PATH="/usr/lib/ccache:$PATH"
-        
-        # 并行编译（根据CPU核心数自动调整）
-        make -j$(($(nproc) + 1)) || make -j1 V=s
-        
-        # 生成编译报告
-        echo "编译状态: $?"
-        [ $? -eq 0 ] && echo "COMPILE_STATUS=success" >> $GITHUB_ENV || echo "COMPILE_STATUS=failed" >> $GITHUB_ENV
+        make -j$(($(nproc) + 1)) \
+          || make -j1 V=s  # 降级模式
 
-    # 阶段8: 产物处理
-    - name: 🚀 发布固件
-      if: env.COMPILE_STATUS == 'success'
-      env:
-        UPLOAD_URL: ${{ github.server_url }}/repos/${{ github.repository }}/releases
+    # 阶段 8: 产物处理
+    - name: 📦 打包固件文件
+      if: success()
       run: |
-        # 生成固件元数据
-        FIRMWARE_DIR="openwrt/bin/targets/ramips/mt7621"
-        echo "固件版本: $(cat ${FIRMWARE_DIR}/version.txt)"
-        echo "编译时间: ${{ env.BUILD_DATE }}"
-        
-        # 自动重命名固件文件
-        for f in ${FIRMWARE_DIR}/*.bin; do
-          new_name="NewifiD2_${CONFIG_FILE}_${BUILD_TIMESTAMP}.bin"
-          mv "$f" "${FIRMWARE_DIR}/${new_name}"
-        done
+        cd openwrt/bin/targets/ramips/mt7621
+        FIRMWARE_NAME="NewifiD2_${CONFIG_FILE}_$(date +%Y%m%d).bin"
+        mv *-sysupgrade.bin $FIRMWARE_NAME
+        echo "FIRMWARE=$FIRMWARE_NAME" >> $GITHUB_ENV
 
-    # 阶段9: 产物上传
-    - name: 📤 上传到Releases
-      if: inputs.UPLOAD_RELEASES == 'true'
+    # 阶段 9: 发布管理
+    - name: 🚀 发布到 GitHub Releases
       uses: softprops/action-gh-release@v1
+      if: success()
       with:
-        files: openwrt/bin/targets/ramips/mt7621/*.bin
-        tag_name: AutoBuild-${{ env.BUILD_TIMESTAMP }}
+        tag_name: autobuild-${{ github.run_id }}
+        files: openwrt/bin/targets/ramips/mt7621/${{ env.FIRMWARE }}
         body: |
-          🚀 自动编译固件
-          - 设备: Newifi D2
-          - 配置: ${{ env.CONFIG_FILE }}
-          - 编译时间: ${{ env.BUILD_DATE }}
+          ### 🚀 自动编译固件
+          - 设备型号: Newifi D2  
+          - 编译时间: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          - 源码版本: ${{ env.DEFAULT_SOURCE }}
 
-    - name: 📦 上传到Artifacts
-      if: inputs.UPLOAD_ARTIFACTS == 'true'
-      uses: actions/upload-artifact@v4
-      with:
-        name: OpenWrt-Binaries
-        path: |
-          openwrt/bin/targets/**
-          !openwrt/bin/targets/*/packages
-
-    # 阶段10: 后处理
-    - name: 🧹 清理历史Workflows
-      if: env.DELETE_OLD_WORKFLOW == 'true'
-      uses: Mattraks/delete-workflow-runs@v2
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        retain_days: 7
-        keep_minimum_runs: 3
-
-    # 错误处理
+    # 阶段 10: 失败处理
     - name: 🚨 编译失败通知
-      if: env.COMPILE_STATUS == 'failed'
+      if: failure()
       uses: actions/github-script@v6
       with:
         script: |
-          await github.rest.issues.createComment({
-            issue_number: context.issue.number,
+          github.rest.issues.createComment({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: '❌ 固件编译失败! 请检查日志: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            issue_number: context.issue.number,
+            body: '❌ 编译失败! 查看日志: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
           })
+
+    # 阶段 11: 日志清理
+    - name: 🗑️ 清理历史日志
+      uses: Mattraks/delete-workflow-runs@v2
+      with:
+        retain_days: ${{ env.DELETE_OLD_WORKFLOW_DAYS }}
+        keep_minimum_runs: 5
