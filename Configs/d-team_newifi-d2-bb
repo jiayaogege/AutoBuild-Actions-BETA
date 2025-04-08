@@ -22,7 +22,7 @@ CONFIG_PACKAGE_ipv6helper=y          # IPv6助手，简化配置
 CONFIG_PACKAGE_dnsmasq_full_dhcpv6=y # 完整版dnsmasq支持IPv6 DHCP
 
 # 隧道协议（按需启用）
-CONFIG_PACKAGE_6in4=y    # IPv6-in-IPv4隧道（需公网IPv4）
+; CONFIG_PACKAGE_6in4=y    # IPv6-in-IPv4隧道（需公网IPv4）
 CONFIG_PACKAGE_6rd=y     # ISP提供的6rd隧道
 CONFIG_PACKAGE_6to4=y    # 自动6to4隧道
 
@@ -53,20 +53,20 @@ CONFIG_PACKAGE_luci-app-usb-printer=y  # CUPS打印机服务界面
 CONFIG_PACKAGE_kmod-usb-printer=y      # 打印机内核模块
 
 # USB网络共享（包含iPhone/android驱动）
-CONFIG_PACKAGE_kmod-usb-net=y
-CONFIG_PACKAGE_kmod-usb-net-asix=y          # ASIX网卡驱动
-CONFIG_PACKAGE_kmod-usb-net-cdc-ether=y      # CDC Ethernet设备
-CONFIG_PACKAGE_kmod-usb-net-cdc-ncm=y        # NCM模式（4G网卡常用）
-CONFIG_PACKAGE_kmod-usb-net-hso=y            # 高通HSO设备
-CONFIG_PACKAGE_kmod-usb-net-huawei-cdc-ncm=y # 华为设备专用
-CONFIG_PACKAGE_kmod-usb-net-ipheth=y         # iPhone USB网络共享驱动
-CONFIG_PACKAGE_kmod-usb-net-rndis=y          # RNDIS协议设备
-CONFIG_PACKAGE_libudev-fbsd=y                # 设备识别依赖
-CONFIG_PACKAGE_usbutils=y                    # USB设备检测工具
+; CONFIG_PACKAGE_kmod-usb-net=y
+; CONFIG_PACKAGE_kmod-usb-net-asix=y          # ASIX网卡驱动
+; CONFIG_PACKAGE_kmod-usb-net-cdc-ether=y      # CDC Ethernet设备
+; CONFIG_PACKAGE_kmod-usb-net-cdc-ncm=y        # NCM模式（4G网卡常用）
+; CONFIG_PACKAGE_kmod-usb-net-hso=y            # 高通HSO设备
+; CONFIG_PACKAGE_kmod-usb-net-huawei-cdc-ncm=y # 华为设备专用
+; CONFIG_PACKAGE_kmod-usb-net-ipheth=y         # iPhone USB网络共享驱动
+; CONFIG_PACKAGE_kmod-usb-net-rndis=y          # RNDIS协议设备
+; CONFIG_PACKAGE_libudev-fbsd=y                # 设备识别依赖
+; CONFIG_PACKAGE_usbutils=y                    # USB设备检测工具
 
 # 网络存储服务（Samba vs FTP）
-CONFIG_PACKAGE_luci-app-samba=y   # SMB共享（轻量级）
-CONFIG_PACKAGE_luci-app-vsftpd=y  # FTP服务
+# CONFIG_PACKAGE_luci-app-samba=y   # SMB共享（轻量级）
+# CONFIG_PACKAGE_luci-app-vsftpd=y  # FTP服务
 
 ##############################################
 ### 五、核心功能与应用
@@ -83,28 +83,28 @@ CONFIG_PACKAGE_xz-utils=y
 
 # 网络工具
 CONFIG_PACKAGE_iperf3=y          # 带宽测试
-CONFIG_PACKAGE_wpad-openssl=y    # WPA3加密支持
-CONFIG_PACKAGE_ppp-mod-pptp=y    # PPTP VPN协议
-CONFIG_PACKAGE_ppp-mod-pppol2tp=y # L2TP VPN协议
-CONFIG_PACKAGE_xl2tpd=y          # L2TP服务端
+# CONFIG_PACKAGE_wpad-openssl=y    # WPA3加密支持
+# CONFIG_PACKAGE_ppp-mod-pptp=y    # PPTP VPN协议
+# CONFIG_PACKAGE_ppp-mod-pppol2tp=y # L2TP VPN协议
+# CONFIG_PACKAGE_xl2tpd=y          # L2TP服务端
 
 ##############################################
 ### 六、Luci界面应用
 ##############################################
 
 # 网络管理
-CONFIG_PACKAGE_luci-app-accesscontrol=y  # 访问控制
-CONFIG_PACKAGE_luci-app-ddns=y           # 动态DNS
-CONFIG_PACKAGE_ddns-scripts_aliyun=y      # 阿里云DDNS
+# CONFIG_PACKAGE_luci-app-accesscontrol=y  # 访问控制
+# CONFIG_PACKAGE_luci-app-ddns=y           # 动态DNS
+# CONFIG_PACKAGE_ddns-scripts_aliyun=y      # 阿里云DDNS
 CONFIG_PACKAGE_ddns-scripts_dnspod=y      # DNSPod
 CONFIG_PACKAGE_ddns-scripts_cloudflare.com-v4=y # Cloudflare
-CONFIG_PACKAGE_luci-app-mwan3=y          # 多线负载均衡
-CONFIG_PACKAGE_luci-app-mwan3helper=y    # MWAN3助手
+# CONFIG_PACKAGE_luci-app-mwan3=y          # 多线负载均衡
+# CONFIG_PACKAGE_luci-app-mwan3helper=y    # MWAN3助手
 CONFIG_PACKAGE_luci-app-upnp=y           # UPnP自动端口映射
 
 # 流量控制
-CONFIG_PACKAGE_luci-app-eqos=y           # IP限速
-CONFIG_PACKAGE_luci-app-sqm=y            # 智能队列管理(QoS)
+# CONFIG_PACKAGE_luci-app-eqos=y           # IP限速
+# CONFIG_PACKAGE_luci-app-sqm=y            # 智能队列管理(QoS)
 
 # 安全相关
 CONFIG_PACKAGE_luci-app-ipsec-vpnd=y     # IPsec服务端
@@ -112,15 +112,15 @@ CONFIG_PACKAGE_luci-app-wireguard=y      # WireGuard VPN
 CONFIG_PACKAGE_luci-app-zerotier=y       # 内网穿透
 
 # 实用工具
-CONFIG_PACKAGE_luci-app-filetransfer=y   # 文件传输
+# CONFIG_PACKAGE_luci-app-filetransfer=y   # 文件传输
 CONFIG_PACKAGE_luci-app-ttyd=y           # Web终端
 CONFIG_PACKAGE_luci-app-wol=y            # 网络唤醒
 CONFIG_PACKAGE_luci-app-serverchan=y     # 微信通知
 CONFIG_PACKAGE_luci-app-natter2=y        # NAT类型检测
 
 # 广告过滤（注意：adbyby与AdGuardHome二选一）
-CONFIG_PACKAGE_luci-app-adbyby-plus=y    # Adbyby+（传统规则过滤）
-CONFIG_PACKAGE_luci-app-adguardhome=y    # AdGuardHome（DNS过滤）
+# CONFIG_PACKAGE_luci-app-adbyby-plus=y    # Adbyby+（传统规则过滤）
+# CONFIG_PACKAGE_luci-app-adguardhome=y    # AdGuardHome（DNS过滤）
 
 # 科学上网插件
 CONFIG_PACKAGE_luci-app-ssr-plus=y
@@ -147,16 +147,12 @@ CONFIG_PACKAGE_alist=y
 CONFIG_PACKAGE_luci-app-alist=y
 
 # Alist依赖组件（根据OpenWrt版本可能需要）
-CONFIG_PACKAGE_luci-lib-ipkg=y          # 包管理库
-CONFIG_PACKAGE_tar=y                    # 压缩包解压支持
-CONFIG_PACKAGE_shadow-chpasswd=y        # 用户密码管理
+# CONFIG_PACKAGE_luci-lib-ipkg=y          # 包管理库
+# CONFIG_PACKAGE_tar=y                    # 压缩包解压支持
+# CONFIG_PACKAGE_shadow-chpasswd=y        # 用户密码管理
 
 # 文件系统扩展支持（推荐添加）
 CONFIG_PACKAGE_kmod-fs-exfat=y          # exFAT格式支持
 CONFIG_PACKAGE_kmod-fs-ntfs=y           # NTFS格式支持
 CONFIG_PACKAGE_ntfs-3g=y                # NTFS读写工具
 CONFIG_PACKAGE_fuse-utils=y             # FUSE挂载工具
-
-# 网络依赖（已存在项目无需重复添加）
-# CONFIG_PACKAGE_curl=y                  # 已存在
-# CONFIG_PACKAGE_openssl-util=y          # 已通过SSL启用
